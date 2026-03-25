@@ -1,0 +1,51 @@
+@import "tailwindcss";
+@import "./fonts.css";
+
+@theme {
+  /* Colors */
+  --color-cream: #FFFFEB;
+  --color-terracotta: #CC785C;
+  --color-periwinkle: #7B8CEA;
+  --color-border: #E8E8E0;
+  --color-text-primary: #1A1A1A;
+  --color-text-secondary: #8D8D83;
+  --color-interactive: #4D65FF;
+  --color-success: #2D9E73;
+  --color-warning: #D97706;
+
+  /* Fonts */
+  --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "EB Garamond", ui-serif, Georgia, serif;
+
+  /* Spacing */
+  --spacing-sidebar: 200px;
+  --spacing-sidebar-collapsed: 40px;
+  --spacing-content-padding: 32px;
+  --spacing-card-padding: 24px;
+  --spacing-card-gap: 16px;
+
+  /* Radius */
+  --radius-card: 12px;
+  --radius-button: 8px;
+  --radius-badge: 20px;
+}
+
+/* Base styles */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #FFFFEB;
+  color: #1A1A1A;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Prevent text selection on drag areas */
+[data-tauri-drag-region] {
+  -webkit-user-select: none;
+  user-select: none;
+}
