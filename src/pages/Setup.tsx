@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { TallyAnimation } from "../components/shared/TallyAnimation";
+import { TallyLogo } from "../components/shared/TallyLogo";
 import {
   detectSources,
   syncData,
@@ -100,6 +100,9 @@ export default function Setup({ onComplete }: Props) {
       <div className="max-w-lg w-full mx-auto px-8">
         {step === "welcome" && (
           <div className="text-center">
+            <div className="flex justify-center mb-6">
+              <TallyLogo size={128} />
+            </div>
             <h1 className="font-serif text-5xl text-text-primary mb-4">
               Tally
             </h1>
@@ -122,7 +125,7 @@ export default function Setup({ onComplete }: Props) {
 
         {step === "detecting" && (
           <div className="text-center flex flex-col items-center">
-            <TallyAnimation size={120} />
+            <TallyLogo size={120} className="mb-2" />
             <p className="text-text-secondary text-sm mt-2">
               Scanning for data sources...
             </p>
@@ -186,7 +189,7 @@ export default function Setup({ onComplete }: Props) {
         {step === "syncing" && (
           <div className="text-center">
             <div className="flex justify-center mb-4">
-              <TallyAnimation size={160} />
+              <TallyLogo size={160} />
             </div>
             <h2 className="font-serif text-2xl text-text-primary mb-6">
               Importing Data

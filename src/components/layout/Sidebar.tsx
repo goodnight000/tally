@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { ToolIcon } from "../shared/ToolIcon";
+import { TallyLogo } from "../shared/TallyLogo";
 import { useSources } from "../../contexts/SourceContext";
 
 type NavItem = {
@@ -30,9 +31,12 @@ export function Sidebar() {
   return (
     <aside className="w-(--spacing-sidebar) bg-white border-r border-border flex flex-col shrink-0">
       <div className="p-6 pb-4">
-        <h1 className="font-serif text-xl font-semibold text-text-primary tracking-tight">
-          Tally
-        </h1>
+        <div className="flex items-center gap-3">
+          <TallyLogo size={28} className="shrink-0" />
+          <h1 className="font-serif text-xl font-semibold text-text-primary tracking-tight">
+            Tally
+          </h1>
+        </div>
       </div>
       <nav className="flex-1 px-3">
         {navItems.map((item) => {

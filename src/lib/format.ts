@@ -90,3 +90,76 @@ export function daysAgo(n: number): string {
 export function today(): string {
   return new Date().toISOString().split("T")[0];
 }
+
+function parseDateOnly(value: string): Date {
+  const datePart = value.slice(0, 10);
+  const [year, month, day] = datePart.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function formatDateOnly(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function getMonthKey(value: string): string {
+  return value.slice(0, 7);
+}
+
+export function shiftMonth(monthKey: string, delta: number): string {
+  const [year, month] = monthKey.split("-").map(Number);
+  const next = new Date(year, month - 1 + delta, 1);
+  return formatDateOnly(next).slice(0, 7);
+}
+
+export function formatMonthLabel(monthKey: string): string {
+  const [year, month] = monthKey.split("-").map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+export function getMonthBounds(monthKey: string): { start: string; end: string } {
+  const [year, month] = monthKey.split("-").map(Number);
+  const start = new Date(year, month - 1, 1);
+  const end = new Date(year, month, 0);
+  return {
+    start: formatDateOnly(start),
+    end: formatDateOnly(end),
+  };
+}
+
+export function getCalendarBounds(monthKey: string): { start: string; end: string } {
+  const monthBounds = getMonthBounds(monthKey);
+  const start = parseDateOnly(monthBounds.start);
+  start.setDate(start.getDate() - start.getDay());
+
+  const end = parseDateOnly(monthBounds.end);
+  end.setDate(end.getDate() + (6 - end.getDay()));
+
+  return {
+    start: formatDateOnly(start),
+    end: formatDateOnly(end),
+  };
+}
+
+export function getDateRange(start: string, end: string): string[] {
+  const results: string[] = [];
+  const cursor = parseDateOnly(start);
+  const last = parseDateOnly(end);
+
+  while (cursor <= last) {
+    results.push(formatDateOnly(cursor));
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return results;
+}
+
+export function isSameDay(a?: string | null, b?: string | null): boolean {
+  if (!a || !b) return false;
+  return a.slice(0, 10) === b.slice(0, 10);
+}

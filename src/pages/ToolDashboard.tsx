@@ -42,6 +42,7 @@ export default function ToolDashboard({ toolId, displayName }: Props) {
         dashboard={dashboard}
         toolFilter={toolId}
         isToday={dashboard.isToday}
+        monthAnchor={dateRange?.end}
       />
     </div>
   );

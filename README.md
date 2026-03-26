@@ -1,6 +1,6 @@
 # Tally
 
-A desktop app that tracks your token usage from **Claude Code** and **Codex CLI**. It reads local data files from both tools, normalizes them into a unified SQLite database, and displays a dashboard with charts, session history, and cost breakdowns.
+A desktop app for tracking local AI coding usage. Tally reads usage data from supported tools on your machine, normalizes it into a unified SQLite database, and shows dashboards for tokens, spend, sessions, models, projects, and activity patterns.
 
 No cloud, no API keys — everything runs locally.
 
@@ -9,13 +9,15 @@ No cloud, no API keys — everything runs locally.
 
 ## Features
 
-- **Unified dashboard** — Combined view of token usage across Claude Code, Codex CLI, and other supported tools
+- **Unified dashboard** — Combined view across all detected tools
 - **Per-tool views** — Filtered dashboards for each tool
 - **Session browser** — Paginated session list with filters, expandable to see individual requests
-- **Daily usage charts** — Track spend and token consumption over time
+- **Daily usage charts** — Track token and cost trends over time
 - **Model breakdown** — See which models you're using and their costs
-- **Activity heatmap** — Visualize coding patterns
+- **Activity calendar** — Inspect usage patterns by month and day
+- **Project breakdown** — See where your usage is going by repo or project
 - **Cost tracking** — Customizable per-model cost rates
+- **Setup wizard** — Detect installed tools and import data locally
 - **Data export** — Export your data as JSON
 - **Fully local** — No network calls, no telemetry, read-only access to source data
 
@@ -25,6 +27,18 @@ No cloud, no API keys — everything runs locally.
 |------|-------------|
 | Claude Code | `~/.claude/` (JSONL session files, stats cache, session index) |
 | Codex CLI | `~/.codex/` (SQLite DB + JSONL session files) |
+| Cline | VS Code extension local data |
+| Kilo Code | VS Code extension local data |
+| Roo Code | VS Code extension local data |
+| OpenCode | Local app data |
+| OpenClaw | Local app data |
+
+## What Tally Is Good At
+
+- Seeing total token usage and estimated spend across tools
+- Comparing models, projects, and sessions in one place
+- Spotting usage patterns over time
+- Importing local data without sending anything to a server
 
 ## Prerequisites
 
@@ -32,11 +46,13 @@ No cloud, no API keys — everything runs locally.
 - [Rust](https://www.rust-lang.org/tools/install) (stable, 2021 edition)
 - Tauri v2 system dependencies — see the [Tauri prerequisites guide](https://v2.tauri.app/start/prerequisites/) for your OS
 
+If you installed Rust with `rustup`, make sure `cargo` is on your `PATH` before building Tally.
+
 ## Getting Started
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/tally.git
+git clone https://github.com/goodnight000/tally.git
 cd tally
 
 # Install frontend dependencies
@@ -47,6 +63,14 @@ npm run tauri dev
 ```
 
 On first launch, Tally will detect available data sources and walk you through a setup wizard.
+
+## First Run
+
+1. Launch the app.
+2. Let Tally detect supported tools on your machine.
+3. Choose which sources to import.
+4. Run the initial import.
+5. Use the Home dashboard for the combined view or switch to per-tool pages.
 
 ## Commands
 
@@ -89,8 +113,8 @@ tally/
 
 ## How It Works
 
-1. **Detect** — Scans for `~/.claude/` and `~/.codex/` directories
-2. **Parse** — Reads JSONL files and SQLite databases (read-only, never writes to source data)
+1. **Detect** — Scans local data directories for supported tools
+2. **Parse** — Reads local JSONL files and SQLite databases from supported tools
 3. **Normalize** — Extracts token counts, models, timestamps, and project metadata into `~/.tally/tally.sqlite`
 4. **Display** — React frontend queries the unified DB via Tauri IPC and renders the dashboard
 5. **Incremental sync** — Tracks watermarks (byte offsets, timestamps) so subsequent syncs only process new data
@@ -107,6 +131,10 @@ tally/
 Tally is designed with privacy in mind:
 
 - **No network access** — Zero telemetry, analytics, or cloud services
-- **Read-only** — Never writes to Claude Code or Codex data directories
+- **Read-only** — Never writes to supported source data directories
 - **Data minimization** — Only stores token counts, model names, timestamps, and project paths. Never stores conversation content.
 - **Local storage** — All data lives in `~/.tally/tally.sqlite`
+
+## License
+
+MIT. See `LICENSE`.

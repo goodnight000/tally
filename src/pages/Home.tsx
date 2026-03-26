@@ -38,7 +38,12 @@ export default function Home() {
       <div className="flex justify-end mb-4">
         <DateRangePicker onChange={setDateRange} />
       </div>
-      <DashboardGrid dashboard={dashboard} toolFilter={undefined} isToday={dashboard.isToday} />
+      <DashboardGrid
+        dashboard={dashboard}
+        toolFilter={undefined}
+        isToday={dashboard.isToday}
+        monthAnchor={dateRange?.end}
+      />
     </div>
   );
 }
@@ -47,10 +52,12 @@ export function DashboardGrid({
   dashboard,
   toolFilter,
   isToday,
+  monthAnchor,
 }: {
   dashboard: ReturnType<typeof useDashboard>;
   toolFilter?: string;
   isToday?: boolean;
+  monthAnchor?: string;
 }) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -64,7 +71,12 @@ export function DashboardGrid({
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-(--spacing-card-gap)">
         <ModelBreakdown data={dashboard.modelBreakdown} />
-        <Heatmap data={dashboard.dailyActivity} dailyUsage={dashboard.dailyUsage} toolFilter={toolFilter} />
+        <Heatmap
+          toolFilter={toolFilter}
+          selectedDate={selectedDate}
+          monthAnchor={monthAnchor}
+          onDateSelect={setSelectedDate}
+        />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-(--spacing-card-gap)">
         <SessionFeed toolFilter={toolFilter} selectedDate={selectedDate} />
