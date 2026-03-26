@@ -2,9 +2,11 @@ import { formatTokens } from "../../lib/format";
 import type { DashboardStats } from "../../lib/types";
 import type { SyncStatusType } from "../../hooks/useSync";
 import type { SyncProgress } from "../../lib/tauri";
+import { ToolIcon } from "../shared/ToolIcon";
 
 interface Props {
   title: string;
+  toolId?: string;
   stats: DashboardStats | null;
   syncStatus: SyncStatusType;
   syncProgress: SyncProgress | null;
@@ -13,14 +15,18 @@ interface Props {
 
 export function TopBar({
   title,
+  toolId,
   stats,
   syncStatus,
   syncProgress,
   onRefresh,
 }: Props) {
   return (
-    <div className="flex items-center justify-between mb-8">
-      <h2 className="font-serif text-[28px] text-text-primary">{title}</h2>
+    <div className="flex items-center justify-between mb-8 mt-4">
+      <h2 className="font-serif text-[42px] text-text-primary flex items-center gap-3">
+        {toolId && <ToolIcon tool={toolId} size={38} />}
+        {title}
+      </h2>
       <div className="flex items-center gap-4">
         {/* Sync status badge */}
         {syncStatus === "syncing" && syncProgress && (

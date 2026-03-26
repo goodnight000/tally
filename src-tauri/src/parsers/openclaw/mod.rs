@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use rusqlite::Connection;
 
 use crate::db::models::{Request, Session};
+use crate::parsers::normalize::unix_ms_to_iso8601;
 use crate::parsers::registry::{DetectedSource, SourceSyncResult};
 
 /// Get the OpenClaw data directory
@@ -201,16 +202,20 @@ fn parse_sessions_json(
             .and_then(|v| v.as_str())
             .map(|s| s.to_string());
 
-        // Timestamps
+        // Timestamps — can be ISO 8601 strings or Unix ms integers
         let start_time = entry.get("createdAt")
             .or_else(|| entry.get("startedAt"))
-            .and_then(|v| v.as_str())
-            .unwrap_or("")
-            .to_string();
+            .and_then(|v| {
+                v.as_str().map(|s| s.to_string())
+                    .or_else(|| v.as_i64().map(|ms| unix_ms_to_iso8601(ms)))
+            })
+            .unwrap_or_default();
         let end_time = entry.get("updatedAt")
             .or_else(|| entry.get("endedAt"))
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string());
+            .and_then(|v| {
+                v.as_str().map(|s| s.to_string())
+                    .or_else(|| v.as_i64().map(|ms| unix_ms_to_iso8601(ms)))
+            });
 
         let full_id = format!("openclaw:{}", sess_id);
         session_ids.push(sess_id.to_string());

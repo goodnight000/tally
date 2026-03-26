@@ -29,6 +29,7 @@ export default function ToolDashboard({ toolId, displayName }: Props) {
     <div>
       <TopBar
         title={displayName}
+        toolId={toolId}
         stats={dashboard.stats}
         syncStatus={sync.status}
         syncProgress={sync.progress}

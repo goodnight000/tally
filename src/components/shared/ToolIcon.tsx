@@ -1,5 +1,5 @@
 import claudeLogo from "../../assets/claude-logo.svg";
-import codexLogo from "../../assets/codex-logo.png";
+import codexLogo from "../../assets/codex-color.svg";
 import clineLogo from "../../assets/cline-logo.png";
 import kiloLogo from "../../assets/kilo-logo.png";
 import rooLogo from "../../assets/roo-logo.png";
