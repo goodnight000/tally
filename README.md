@@ -21,6 +21,18 @@ No cloud, no API keys — everything runs locally.
 - **Data export** — Export your data as JSON
 - **Fully local** — No network calls, no telemetry, read-only access to source data
 
+## Screenshots
+
+### Dashboard Overview
+
+![Tally dashboard overview](docs/images/tally-dashboard-overview.png)
+Main dashboard showing token totals, estimated cost, trend lines, and per-tool comparison.
+
+### Activity Calendar
+
+![Tally activity calendar and model breakdown](docs/images/tally-activity-calendar.png)
+Monthly activity calendar with per-day token intensity, plus model and session breakdowns.
+
 ## Supported Tools
 
 | Tool | Data Source |
