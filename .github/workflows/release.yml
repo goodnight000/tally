@@ -6,55 +6,178 @@ on:
       - "v*"
 
 jobs:
-  release:
+  build-macos-arm:
+    runs-on: macos-latest
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: macos-latest
-            args: --target aarch64-apple-darwin
-          - platform: macos-latest
-            args: --target x86_64-apple-darwin
-          - platform: ubuntu-22.04
-            args: ""
-          - platform: windows-latest
-            args: ""
-
-    runs-on: ${{ matrix.platform }}
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: aarch64-apple-darwin
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - run: npm install
+      - name: Build Tauri app
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npx tauri build --target aarch64-apple-darwin
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-arm
+          path: |
+            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.tar.gz
+            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.tar.gz.sig
 
-      - name: Install Ubuntu dependencies
-        if: matrix.platform == 'ubuntu-22.04'
+  build-macos-intel:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - run: npm install
+      - name: Build Tauri app
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npx tauri build --target x86_64-apple-darwin
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-intel
+          path: |
+            src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.tar.gz
+            src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.tar.gz.sig
+
+  build-linux:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-
-      - name: Install frontend dependencies
-        run: npm install
-
-      - uses: tauri-apps/tauri-action@v0
+      - run: npm install
+      - name: Build Tauri app
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: npx tauri build
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
         with:
-          tagName: v__VERSION__
-          releaseName: "Tally v__VERSION__"
-          releaseBody: "See the assets below to download and install this version."
-          releaseDraft: true
-          prerelease: false
-          args: ${{ matrix.args }}
+          name: linux
+          path: |
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/rpm/*.rpm
+            src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/appimage/*.AppImage.sig
+
+  publish:
+    needs: [build-macos-arm, build-macos-intel, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Get version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Collect release files
+        run: |
+          mkdir -p release-files
+          find artifacts -type f \( -name "*.dmg" -o -name "*.tar.gz" -o -name "*.tar.gz.sig" -o -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" -o -name "*.AppImage.sig" \) -exec cp {} release-files/ \;
+          ls -la release-files/
+
+      - name: Generate latest.json
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cd release-files
+
+          AARCH64_SIG=$(cat Tally.app.tar.gz.sig 2>/dev/null || echo "")
+          # Handle potential naming differences
+          if [ -z "$AARCH64_SIG" ]; then
+            AARCH64_SIG=$(find . -name "*aarch64*.tar.gz.sig" -exec cat {} \; 2>/dev/null || echo "")
+          fi
+
+          X64_SIG=""
+          for f in *x64*.tar.gz.sig *x86_64*.tar.gz.sig; do
+            if [ -f "$f" ]; then
+              X64_SIG=$(cat "$f")
+              break
+            fi
+          done
+
+          LINUX_SIG=""
+          for f in *.AppImage.sig; do
+            if [ -f "$f" ]; then
+              LINUX_SIG=$(cat "$f")
+              break
+            fi
+          done
+
+          REPO="goodnight000/tally"
+          BASE_URL="https://github.com/$REPO/releases/download/v$VERSION"
+
+          cat > latest.json << ENDJSON
+          {
+            "version": "$VERSION",
+            "notes": "Tally v$VERSION",
+            "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "platforms": {
+              "darwin-aarch64": {
+                "signature": "$AARCH64_SIG",
+                "url": "$BASE_URL/Tally_aarch64.app.tar.gz"
+              },
+              "darwin-x86_64": {
+                "signature": "$X64_SIG",
+                "url": "$BASE_URL/Tally_x64.app.tar.gz"
+              },
+              "linux-x86_64": {
+                "signature": "$LINUX_SIG",
+                "url": "$BASE_URL/Tally_${VERSION}_amd64.AppImage"
+              }
+            }
+          }
+          ENDJSON
+
+          # Clean up indentation
+          python3 -c "import json,sys; d=json.load(open('latest.json')); json.dump(d,open('latest.json','w'),indent=2)"
+
+          cat latest.json
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "v$VERSION" \
+            --repo goodnight000/tally \
+            --title "Tally v$VERSION" \
+            --notes "See the assets below to download and install this version." \
+            release-files/*
