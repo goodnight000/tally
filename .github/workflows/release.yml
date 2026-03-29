@@ -24,14 +24,13 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npx tauri build --target aarch64-apple-darwin
+      - name: List bundle output
+        run: find src-tauri/target/aarch64-apple-darwin/release/bundle -type f | sort
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-arm
-          path: |
-            src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
-            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.tar.gz
-            src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.tar.gz.sig
+          path: src-tauri/target/aarch64-apple-darwin/release/bundle/
 
   build-macos-intel:
     runs-on: macos-latest
@@ -51,14 +50,13 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npx tauri build --target x86_64-apple-darwin
+      - name: List bundle output
+        run: find src-tauri/target/x86_64-apple-darwin/release/bundle -type f | sort
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-intel
-          path: |
-            src-tauri/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg
-            src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.tar.gz
-            src-tauri/target/x86_64-apple-darwin/release/bundle/macos/*.tar.gz.sig
+          path: src-tauri/target/x86_64-apple-darwin/release/bundle/
 
   build-linux:
     runs-on: ubuntu-22.04
@@ -80,15 +78,13 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npx tauri build
+      - name: List bundle output
+        run: find src-tauri/target/release/bundle -type f | sort
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: linux
-          path: |
-            src-tauri/target/release/bundle/deb/*.deb
-            src-tauri/target/release/bundle/rpm/*.rpm
-            src-tauri/target/release/bundle/appimage/*.AppImage
-            src-tauri/target/release/bundle/appimage/*.AppImage.sig
+          path: src-tauri/target/release/bundle/
 
   publish:
     needs: [build-macos-arm, build-macos-intel, build-linux]
@@ -107,69 +103,85 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
-      - name: Collect release files
-        run: |
-          mkdir -p release-files
-          find artifacts -type f \( -name "*.dmg" -o -name "*.tar.gz" -o -name "*.tar.gz.sig" -o -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" -o -name "*.AppImage.sig" \) -exec cp {} release-files/ \;
-          ls -la release-files/
+      - name: List all downloaded artifacts
+        run: find artifacts -type f | sort
 
-      - name: Generate latest.json
+      - name: Collect release files and generate latest.json
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          cd release-files
+          mkdir -p release-files
 
-          AARCH64_SIG=$(cat Tally.app.tar.gz.sig 2>/dev/null || echo "")
-          # Handle potential naming differences
-          if [ -z "$AARCH64_SIG" ]; then
-            AARCH64_SIG=$(find . -name "*aarch64*.tar.gz.sig" -exec cat {} \; 2>/dev/null || echo "")
-          fi
+          # macOS ARM
+          cp artifacts/macos-arm/dmg/*.dmg release-files/ 2>/dev/null || true
+          cp artifacts/macos-arm/macos/*.tar.gz release-files/Tally_aarch64.app.tar.gz 2>/dev/null || true
+          cp artifacts/macos-arm/macos/*.tar.gz.sig release-files/Tally_aarch64.app.tar.gz.sig 2>/dev/null || true
 
-          X64_SIG=""
-          for f in *x64*.tar.gz.sig *x86_64*.tar.gz.sig; do
-            if [ -f "$f" ]; then
-              X64_SIG=$(cat "$f")
-              break
-            fi
-          done
+          # macOS Intel
+          cp artifacts/macos-intel/dmg/*.dmg release-files/ 2>/dev/null || true
+          cp artifacts/macos-intel/macos/*.tar.gz release-files/Tally_x64.app.tar.gz 2>/dev/null || true
+          cp artifacts/macos-intel/macos/*.tar.gz.sig release-files/Tally_x64.app.tar.gz.sig 2>/dev/null || true
 
-          LINUX_SIG=""
-          for f in *.AppImage.sig; do
-            if [ -f "$f" ]; then
-              LINUX_SIG=$(cat "$f")
-              break
-            fi
-          done
+          # Linux
+          cp artifacts/linux/deb/*.deb release-files/ 2>/dev/null || true
+          cp artifacts/linux/rpm/*.rpm release-files/ 2>/dev/null || true
+          cp artifacts/linux/appimage/*.AppImage release-files/ 2>/dev/null || true
+          cp artifacts/linux/appimage/*.AppImage.sig release-files/ 2>/dev/null || true
 
+          echo "=== Release files ==="
+          ls -la release-files/
+
+          # Generate latest.json
           REPO="goodnight000/tally"
           BASE_URL="https://github.com/$REPO/releases/download/v$VERSION"
 
-          cat > latest.json << ENDJSON
-          {
-            "version": "$VERSION",
-            "notes": "Tally v$VERSION",
-            "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "platforms": {
-              "darwin-aarch64": {
-                "signature": "$AARCH64_SIG",
-                "url": "$BASE_URL/Tally_aarch64.app.tar.gz"
-              },
-              "darwin-x86_64": {
-                "signature": "$X64_SIG",
-                "url": "$BASE_URL/Tally_x64.app.tar.gz"
-              },
-              "linux-x86_64": {
-                "signature": "$LINUX_SIG",
-                "url": "$BASE_URL/Tally_${VERSION}_amd64.AppImage"
-              }
-            }
+          AARCH64_SIG=""
+          if [ -f release-files/Tally_aarch64.app.tar.gz.sig ]; then
+            AARCH64_SIG=$(cat release-files/Tally_aarch64.app.tar.gz.sig)
+          fi
+
+          X64_SIG=""
+          if [ -f release-files/Tally_x64.app.tar.gz.sig ]; then
+            X64_SIG=$(cat release-files/Tally_x64.app.tar.gz.sig)
+          fi
+
+          LINUX_SIG=""
+          LINUX_APPIMAGE=$(find release-files -name "*.AppImage" -not -name "*.sig" | head -1)
+          LINUX_SIG_FILE=$(find release-files -name "*.AppImage.sig" | head -1)
+          if [ -n "$LINUX_SIG_FILE" ]; then
+            LINUX_SIG=$(cat "$LINUX_SIG_FILE")
+          fi
+          LINUX_APPIMAGE_NAME=$(basename "$LINUX_APPIMAGE" 2>/dev/null || echo "")
+
+          python3 -c "
+          import json
+          data = {
+            'version': '$VERSION',
+            'notes': 'Tally v$VERSION',
+            'pub_date': '$(date -u +%Y-%m-%dT%H:%M:%SZ)',
+            'platforms': {}
           }
-          ENDJSON
+          if '$AARCH64_SIG':
+            data['platforms']['darwin-aarch64'] = {
+              'signature': '$AARCH64_SIG',
+              'url': '$BASE_URL/Tally_aarch64.app.tar.gz'
+            }
+          if '$X64_SIG':
+            data['platforms']['darwin-x86_64'] = {
+              'signature': '$X64_SIG',
+              'url': '$BASE_URL/Tally_x64.app.tar.gz'
+            }
+          if '$LINUX_SIG' and '$LINUX_APPIMAGE_NAME':
+            data['platforms']['linux-x86_64'] = {
+              'signature': '$LINUX_SIG',
+              'url': '$BASE_URL/$LINUX_APPIMAGE_NAME'
+            }
+          with open('release-files/latest.json', 'w') as f:
+            json.dump(data, f, indent=2)
+          "
 
-          # Clean up indentation
-          python3 -c "import json,sys; d=json.load(open('latest.json')); json.dump(d,open('latest.json','w'),indent=2)"
-
-          cat latest.json
+          echo "=== latest.json ==="
+          cat release-files/latest.json
 
       - name: Create GitHub Release
         env:
