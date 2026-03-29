@@ -37,7 +37,7 @@ export function ToolIcon({ tool, size = 18 }: Props) {
     return (
       <img
         src={LOGO_MAP[tool]}
-        alt={DISPLAY_NAMES[tool] || tool}
+        alt=""
         width={size}
         height={size}
         className="shrink-0"
