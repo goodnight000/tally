@@ -82,3 +82,23 @@ Defined in `src/styles/index.css` via Tailwind v4 `@theme`:
 - **Data minimization**: Only extract token counts, models, timestamps, and project metadata. Never store conversation content.
 - **Concurrent access**: Open Codex SQLite in read-only mode. Handle locked DB gracefully (skip and retry on next sync).
 - **No network**: No telemetry, no analytics, no cloud services. Fully local.
+
+## Testing
+
+```bash
+# Run all frontend tests
+npm test
+
+# Watch mode
+npm run test:watch
+
+# Run Rust tests
+cd src-tauri && cargo test
+```
+
+Test files live next to source: `format.ts` → `format.test.ts`. See `TESTING.md` for conventions.
+
+- When writing new functions, write a corresponding test
+- When fixing a bug, write a regression test
+- When adding a conditional, test both paths
+- Never commit code that breaks existing tests
