@@ -1,4 +1,7 @@
-# Tally
+<h1 align="left">
+  <img src="src/assets/tally-logo-flow-horizontal.svg" alt="Tally logo" width="44" valign="middle" />
+  <span>Tally</span>
+</h1>
 
 A desktop app for tracking local AI coding usage. Tally reads usage data from supported tools on your machine, normalizes it into a unified SQLite database, and shows dashboards for tokens, spend, sessions, models, projects, and activity patterns.
 
