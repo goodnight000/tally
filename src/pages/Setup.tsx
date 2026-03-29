@@ -24,6 +24,17 @@ export default function Setup({ onComplete }: Props) {
   const [syncResult, setSyncResult] = useState<SyncResult | null>(null);
   const [progress, setProgress] = useState<SyncProgress | null>(null);
   const [notInstalledMsg, setNotInstalledMsg] = useState<string | null>(null);
+  const [syncTimedOut, setSyncTimedOut] = useState(false);
+
+  // Show skip button after 15s if sync hasn't completed
+  useEffect(() => {
+    if (step !== "syncing") {
+      setSyncTimedOut(false);
+      return;
+    }
+    const timer = setTimeout(() => setSyncTimedOut(true), 15_000);
+    return () => clearTimeout(timer);
+  }, [step]);
 
   // Listen for sync events
   useEffect(() => {
@@ -222,6 +233,15 @@ export default function Setup({ onComplete }: Props) {
                   </p>
                 )}
               </div>
+            )}
+
+            {syncTimedOut && (
+              <button
+                onClick={() => setStep("done")}
+                className="mt-6 px-4 py-2 text-sm text-text-secondary hover:text-text-primary transition-colors"
+              >
+                Taking too long? Skip →
+              </button>
             )}
           </div>
         )}
