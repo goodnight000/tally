@@ -3,6 +3,7 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import { getSyncStatus, detectSources, syncData } from "./lib/tauri";
 import { SourceProvider } from "./contexts/SourceContext";
+import { UpdateChecker } from "./components/shared/UpdateChecker";
 import type { SourceInfo } from "./lib/types";
 import Home from "./pages/Home";
 import ToolDashboard from "./pages/ToolDashboard";
@@ -57,6 +58,7 @@ function App() {
 
   return (
     <SourceProvider initialSources={sources}>
+      <UpdateChecker />
       <MemoryRouter>
         <AppLayout>
           <Routes>

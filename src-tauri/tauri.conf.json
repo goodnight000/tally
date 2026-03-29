@@ -25,6 +25,14 @@
       "csp": null
     }
   },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/goodnight000/tally/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDNBOTIwODczQzM2NUYwMDcKUldRSDhHWERjd2lTT2pBSzNOWnJ0dHUrVDRlUWNuMXJqLzlBdk9Ia2ZRVFpObDBmZzRVTHRhUzQK"
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",
