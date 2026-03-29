@@ -5,7 +5,6 @@ import {
   formatBytes,
   calculateCost,
   getMonthBounds,
-  getCalendarBounds,
   getDateRange,
   shiftMonth,
   isSameDay,
